@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulación Puestos de Carga</title>
+  <!-- Bootstrap 4.5.2 – solo CSS -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  />
+
+  <!-- Estilos con colores de Brasil -->
+  <style>
+    :root {
+      --color-fondo: #ffffff;          /* blanco */
+      --color-principal: #009739;      /* verde bandera */
+      --color-secundario: #ffcc29;     /* amarillo dorado */
+      --color-texto: #2e2e2e;          /* gris oscuro */
+      --color-botones: #009739;        /* verde principal */
+      --color-botones-hover: #00762b;  /* verde más oscuro */
+      --color-cards: #f0fff4;          /* verde muy suave */
+      --color-borde: #a6e3a1;          /* borde verde claro */
+    }
+
+    body {
+      background-color: var(--color-fondo);
+      color: var(--color-texto);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: max-content;
+      margin: 2rem auto;
+    }
+
+    h1, h2 {
+      color: var(--color-principal);
+      font-weight: 600;
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    .form-control {
+      border: 1px solid var(--color-borde);
+      border-radius: 4px;
+      background-color: #ffffff;
+      color: var(--color-texto);
+    }
+
+    .form-control:focus {
+      box-shadow: none;
+      border-color: var(--color-principal);
+    }
+
+    .btn-primary {
+      background-color: var(--color-botones);
+      border-color: var(--color-botones);
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-botones-hover);
+      border-color: var(--color-botones-hover);
+    }
+
+    .card-custom {
+      background-color: var(--color-cards);
+      border: 1px solid var(--color-borde);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      margin-top: 1.5rem;
+    }
+
+    .card-custom .card-body {
+      padding: 1.5rem;
+    }
+
+    .table thead th {
+      background-color: var(--color-principal);
+      color: #ffffff;
+      font-weight: 500;
+      font-size: 0.80rem;
+      white-space: nowrap;
+    }
+
+    .table tbody td {
+      border-color: var(--color-borde);
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    .table-responsive {
+      margin-top: 1rem;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .alert-danger {
+      background-color: #fdecea;
+      border-color: #f5c2c7;
+      color: #842029;
+    }
+
+    .alert-warning {
+      background-color: #fff4e5;
+      border-color: #ffcc29;
+      color: #2e2e2e;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="text-center mb-4">Simulación: Puestos de Carga</h1>
+
+    <!-- Mensaje de error (si existe) -->
+    {% if error %}
+      <div class="alert alert-danger" role="alert">
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <!-- FORMULARIO PARAMETRIZABLE -->
+    <div class="card card-custom">
+      <div class="card-body">
+        <form method="post" action="/">
+          <div class="form-row">
+            <!-- Tiempo máximo -->
+            <div class="form-group col-md-4">
+              <label for="T_max">Tiempo máximo (minutos)</label>
+              <input
+                type="number"
+                step="any"
+                class="form-control"
+                id="T_max"
+                name="T_max"
+                placeholder="Ej: 720"
+                required
+                value="{{ request.form.T_max or '' }}"
+              />
+            </div>
+            <!-- Eventos máximos -->
+            <div class="form-group col-md-4">
+              <label for="N_max">Eventos máximos (N_max)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="N_max"
+                name="N_max"
+                placeholder="Ej: 100000"
+                required
+                value="{{ request.form.N_max or '' }}"
+              />
+            </div>
+            <!-- Media interarribo -->
+            <div class="form-group col-md-4">
+              <label for="media_interarribo">Media llegada (minutos)</label>
+              <input
+                type="number"
+                step="any"
+                class="form-control"
+                id="media_interarribo"
+                name="media_interarribo"
+                placeholder="13"
+                required
+                value="{{ request.form.media_interarribo or '13' }}"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Tiempo de validación -->
+            <div class="form-group col-md-4">
+              <label for="tiempo_validacion">Validación (minutos)</label>
+              <input
+                type="number"
+                step="any"
+                class="form-control"
+                id="tiempo_validacion"
+                name="tiempo_validacion"
+                placeholder="2"
+                required
+                value="{{ request.form.tiempo_validacion or '2' }}"
+              />
+            </div>
+            <!-- Porcentaje USB-C -->
+            <div class="form-group col-md-4">
+              <label for="p_usb_c">USB-C (0–1)</label>
+              <input
+                type="number"
+                step="any"
+                class="form-control"
+                id="p_usb_c"
+                name="p_usb_c"
+                placeholder="0.45"
+                required
+                value="{{ request.form.p_usb_c or '0.45' }}"
+              />
+            </div>
+            <!-- Porcentaje Lightning -->
+            <div class="form-group col-md-4">
+              <label for="p_lightning">Lightning (0–1)</label>
+              <input
+                type="number"
+                step="any"
+                class="form-control"
+                id="p_lightning"
+                name="p_lightning"
+                placeholder="0.25"
+                required
+                value="{{ request.form.p_lightning or '0.25' }}"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <!-- Porcentaje MicroUSB -->
+            <div class="form-group col-md-4">
+              <label for="p_microusb">MicroUSB (0–1)</label>
+              <input
+                type="number"
+                step="any"
+                class="form-control"
+                id="p_microusb"
+                name="p_microusb"
+                placeholder="0.30"
+                required
+                value="{{ request.form.p_microusb or '0.30' }}"
+              />
+            </div>
+            <!-- Cantidad de puestos -->
+            <div class="form-group col-md-4">
+              <label for="n_servidores">Puestos disponibles</label>
+              <select
+                class="form-control"
+                id="n_servidores"
+                name="n_servidores"
+                required
+              >
+                <option value="8" {% if request.form.n_servidores == '8' %}selected{% endif %}>
+                  8 puestos
+                </option>
+                <option value="10" {% if request.form.n_servidores == '10' %}selected{% endif %}>
+                  10 puestos
+                </option>
+              </select>
+            </div>
+            <div class="form-group col-md-8"></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            Iniciar Simulación
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- RESULTADOS: aparecen si existe “resumen” -->
+    {% if resumen %}
+      <div class="card card-custom mt-4">
+        <div class="card-body">
+          <h2 class="mb-3">Resumen de la simulación</h2>
+          <ul class="list-group mb-4">
+            <li class="list-group-item">
+              <strong>Llegadas aceptadas:</strong> {{ resumen.n_aceptadas }}
+            </li>
+            <li class="list-group-item">
+              <strong>Llegadas rechazadas:</strong> {{ resumen.n_rechazadas }}
+            </li>
+            <li class="list-group-item">
+              <strong>Recaudación total:</strong> ${{ resumen.recaudacion_total }}
+            </li>
+            <li class="list-group-item">
+              <strong>Utilización promedio de puestos:</strong> {{ resumen.utilizacion_promedio }} %
+            </li>
+          </ul>
+
+          <!-- Gráfico Aceptados vs Rechazados (antes de la tabla) -->
+          <h2 class="mb-3">Gráfico: Aceptados vs Rechazados</h2>
+          <div class="w-100 mb-4" style="max-width: 500px; height: 300px; margin: 0 auto;">
+            <canvas id="graficoAceptados"></canvas>
+          </div>
+
+          <!-- Última fila simulada -->
+          {% if ultima_fila %}
+            <h2 class="mb-3">Última fila del vector de estado</h2>
+            <div class="table-responsive mb-4">
+              <table class="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    {% for clave in ultima_fila.keys() %}
+                      <th>{{ clave }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {% for valor in ultima_fila.values() %}
+                      <td>{{ valor }}</td>
+                    {% endfor %}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+
+          
+          {% if aviso_recorte %}
+            <div class="alert alert-warning mb-3">
+              {{ aviso_recorte }}
+            </div>
+          {% endif %}
+
+          <!-- Tabla recortada -->
+          {% if vector_estado %}
+            <h2 class="mb-3">Últimas filas del vector de estado ({{ vector_estado|length }} filas mostradas)</h2>
+            <div class="table-responsive mb-4">
+              <table class="table table-sm table-bordered">
+                <thead>
+                  <tr>
+                    {% for clave in vector_estado[0].keys() %}
+                      <th>{{ clave }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for fila in vector_estado %}
+                    <tr>
+                      {% for valor in fila.values() %}
+                        <td>{{ valor }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <footer class="mt-5">&copy; 2025 – Puestos de Carga Río Vivo</footer>
+  </div>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    {% if resumen %}
+      // Configurar y renderizar el gráfico de Aceptados vs Rechazados
+      const ctxAceptados = document.getElementById("graficoAceptados").getContext("2d");
+      new Chart(ctxAceptados, {
+        type: 'doughnut',
+        data: {
+          labels: ['Aceptados', 'Rechazados'],
+          datasets: [{
+            data: [{{ resumen.n_aceptadas }}, {{ resumen.n_rechazadas }}],
+            backgroundColor: ['#009739', '#ffcc29'],
+            borderColor: '#ffffff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '60%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                padding: 16,
+                color: '#2e2e2e',
+                font: { size: 12 }
+              }
+            },
+            title: {
+              display: true,
+              text: 'Distribución de Llegadas: Aceptados vs Rechazados',
+              font: { size: 16, weight: '600' },
+              color: '#009739',
+              padding: { bottom: 20 }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const porcentaje = total ? ((value / total) * 100).toFixed(1) : 0;
+                  return label + ': ' + value + ' (' + porcentaje + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    {% endif %}
+  </script>
+</body>
+</html>
